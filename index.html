@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Analisis J.G.S. - Dashboard Financiero</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,700&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --navy:#1F3864;--navy-deep:#0f2240;--gold:#FFC000;--gold-soft:#FFD54F;
+  --blue:#2B5EA7;--green:#548235;--white:#fff;--gray:#F2F2F2;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--navy-deep);color:var(--white);min-height:100vh;overflow-x:hidden}
+
+/* Background pattern */
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 10%, rgba(43,94,167,.25) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 80% 80%, rgba(255,192,0,.08) 0%, transparent 50%),
+    repeating-linear-gradient(90deg, rgba(255,255,255,.015) 0px, rgba(255,255,255,.015) 1px, transparent 1px, transparent 80px),
+    repeating-linear-gradient(0deg, rgba(255,255,255,.015) 0px, rgba(255,255,255,.015) 1px, transparent 1px, transparent 80px);
+}
+
+.container{position:relative;z-index:1;max-width:960px;margin:0 auto;padding:60px 24px 40px}
+
+/* Header */
+.badge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,192,0,.12);border:1px solid rgba(255,192,0,.25);border-radius:20px;padding:6px 16px;font-size:12px;color:var(--gold);font-weight:600;letter-spacing:.04em;margin-bottom:28px}
+.badge::before{content:'';width:6px;height:6px;background:var(--gold);border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+h1{font-family:'Playfair Display',serif;font-size:clamp(36px,6vw,58px);font-weight:800;line-height:1.1;margin-bottom:16px;letter-spacing:-.02em}
+h1 span{color:var(--gold);display:inline}
+
+.subtitle{font-size:17px;color:rgba(255,255,255,.6);line-height:1.6;max-width:560px;margin-bottom:44px}
+
+/* Features */
+.features{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-bottom:50px}
+.feature{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:24px;transition:all .3s}
+.feature:hover{background:rgba(255,255,255,.07);border-color:rgba(255,192,0,.2);transform:translateY(-2px)}
+.feature-icon{font-size:28px;margin-bottom:12px}
+.feature h3{font-size:15px;font-weight:700;margin-bottom:6px;color:var(--white)}
+.feature p{font-size:13px;color:rgba(255,255,255,.5);line-height:1.5}
+
+/* CTA Section */
+.cta-box{text-align:center;background:linear-gradient(135deg,rgba(43,94,167,.2),rgba(255,192,0,.08));border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:48px 32px;margin-bottom:40px}
+.price{font-family:'Playfair Display',serif;font-size:48px;font-weight:800;color:var(--gold);margin-bottom:6px}
+.price-note{font-size:13px;color:rgba(255,255,255,.45);margin-bottom:28px}
+.cta-btn{
+  display:inline-block;background:var(--gold);color:var(--navy-deep);
+  padding:16px 48px;border-radius:8px;font-size:16px;font-weight:700;
+  text-decoration:none;letter-spacing:.02em;
+  transition:all .25s;box-shadow:0 4px 24px rgba(255,192,0,.3);
+}
+.cta-btn:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(255,192,0,.45);background:var(--gold-soft)}
+.secure{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:16px;font-size:11px;color:rgba(255,255,255,.35)}
+
+/* Preview mockup */
+.preview{margin-bottom:50px;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.1);box-shadow:0 20px 60px rgba(0,0,0,.4)}
+.preview-bar{background:linear-gradient(135deg,var(--navy),var(--blue));padding:12px 18px;display:flex;align-items:center;gap:8px}
+.preview-dot{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.15)}
+.preview-dot:first-child{background:#ff5f57}.preview-dot:nth-child(2){background:#febc2e}.preview-dot:nth-child(3){background:#28c840}
+.preview-body{background:var(--gray);padding:20px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.preview-card{background:var(--white);border-radius:8px;padding:16px;border-top:3px solid var(--blue)}
+.preview-card .label{font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+.preview-card .val{font-size:22px;font-weight:700;color:var(--navy);margin-top:4px}
+.preview-card .bar{height:4px;background:#eee;border-radius:2px;margin-top:8px}
+.preview-card .bar-fill{height:4px;border-radius:2px;background:var(--blue)}
+
+footer{text-align:center;font-size:11px;color:rgba(255,255,255,.25);padding-bottom:30px}
+
+@media(max-width:600px){
+  .container{padding:40px 16px 30px}
+  .features{grid-template-columns:1fr}
+  .preview-body{grid-template-columns:1fr}
+  .cta-box{padding:32px 20px}
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="badge">HERRAMIENTA PROFESIONAL</div>
+
+  <h1>Dashboard de<br><span>Análisis Financiero</span></h1>
+  <p class="subtitle">Visualiza ventas, costes y márgenes de tu negocio agrícola en un panel interactivo. Carga tus datos Excel y obtén insights al instante.</p>
+
+  <!-- Preview -->
+  <div class="preview">
+    <div class="preview-bar">
+      <div class="preview-dot"></div>
+      <div class="preview-dot"></div>
+      <div class="preview-dot"></div>
+    </div>
+    <div class="preview-body">
+      <div class="preview-card">
+        <div class="label">Total Ventas</div>
+        <div class="val" style="color:#2B5EA7">3.2M €</div>
+        <div class="bar"><div class="bar-fill" style="width:85%"></div></div>
+      </div>
+      <div class="preview-card">
+        <div class="label">Total Costes</div>
+        <div class="val" style="color:#C55A11">2.5M €</div>
+        <div class="bar"><div class="bar-fill" style="width:70%;background:#C55A11"></div></div>
+      </div>
+      <div class="preview-card">
+        <div class="label">Margen Bruto</div>
+        <div class="val" style="color:#548235">718K €</div>
+        <div class="bar"><div class="bar-fill" style="width:55%;background:#548235"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Features -->
+  <div class="features">
+    <div class="feature">
+      <div class="feature-icon">📊</div>
+      <h3>Gráficas interactivas</h3>
+      <p>Barras, líneas, donut y rankings que se actualizan en tiempo real con tus datos.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">📂</div>
+      <h3>Carga tu Excel</h3>
+      <p>Arrastra y suelta tu archivo .xlsx y el dashboard se adapta automáticamente.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">🔍</div>
+      <h3>Filtros avanzados</h3>
+      <p>Filtra por año, mes, cliente o crea grupos personalizados de clientes.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">💰</div>
+      <h3>KPIs clave</h3>
+      <p>Ventas, costes, margen bruto, precio medio y rentabilidad de un vistazo.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">🏆</div>
+      <h3>Rankings</h3>
+      <p>Top clientes por ventas y beneficio, mejores y peores variedades.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">🖥️</div>
+      <h3>100% navegador</h3>
+      <p>No necesitas instalar nada. Funciona en cualquier dispositivo con navegador web.</p>
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <div class="cta-box">
+    <div class="price">29,99 €</div>
+    <div class="price-note">Pago único · Acceso permanente</div>
+    <a href="https://buy.stripe.com/test_cNi8wH46YelheuAezX2ZO00" class="cta-btn">Comprar ahora</a>
+    <div class="secure">🔒 Pago seguro con Stripe</div>
+  </div>
+
+  <footer>© 2026 Analisis J.G.S. · Todos los derechos reservados</footer>
+</div>
+</body>
+</html>

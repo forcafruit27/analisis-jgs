@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Analisis J.G.S. - Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Calibri,sans-serif;background:#F2F2F2;min-height:100vh}
+.drop-overlay{position:fixed;inset:0;background:rgba(31,56,100,.92);z-index:9999;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s}
+.drop-overlay.active{opacity:1;pointer-events:all}
+.drop-box{border:3px dashed #FFC000;border-radius:20px;padding:60px 80px;text-align:center;max-width:560px}
+.drop-box h2{color:#FFC000;font-size:24px;margin-bottom:10px}
+.drop-box p{color:rgba(255,255,255,.7);font-size:13px;line-height:1.6}
+.drop-box .icon{font-size:56px;margin-bottom:14px}
+.file-info{display:inline-flex;align-items:center;gap:6px;background:rgba(255,192,0,.15);border:1px solid rgba(255,192,0,.3);border-radius:6px;padding:4px 12px;font-size:10px;color:#FFC000;font-weight:600;margin-left:8px;cursor:pointer}
+.file-info:hover{background:rgba(255,192,0,.25)}
+.file-info input{display:none}
+.hdr{background:linear-gradient(135deg,#1F3864,#2B5EA7);padding:14px 22px;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.hdr-top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.logo{display:flex;align-items:center;gap:12px}
+.logo-bar{width:4px;height:34px;background:#FFC000;border-radius:2px;flex-shrink:0}
+.logo h1{font-size:19px;color:#fff;letter-spacing:-.02em}
+.logo p{font-size:10px;color:rgba(255,255,255,.6);margin-top:2px}
+.flt{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.flt label{font-size:10px;color:rgba(255,255,255,.7);font-weight:600;margin-left:6px}
+.flt select{padding:4px 8px;font-size:11px;border-radius:4px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.1);color:#fff;cursor:pointer;outline:none;max-width:240px}
+.flt select option{color:#333}
+.btn{padding:4px 12px;font-size:10px;font-weight:600;border:none;border-radius:4px;cursor:pointer}
+.btn-gold{background:#FFC000;color:#1F3864}
+.btn-grp{background:rgba(255,255,255,.12);color:#FFC000;border:1px solid rgba(255,255,255,.25)}
+.btn-grp.active{background:#fff;color:#1F3864}
+.grp-panel{margin-top:12px;background:rgba(255,255,255,.07);border-radius:8px;padding:14px 16px;border:1px solid rgba(255,255,255,.12);display:none}
+.grp-panel.show{display:block}
+.grp-panel h3{font-size:12px;color:#FFC000;font-weight:700;margin-bottom:8px}
+.grp-search{width:100%;padding:5px 10px;font-size:11px;border-radius:4px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.07);color:#fff;margin-bottom:8px;outline:none}
+.grp-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:3px;max-height:170px;overflow-y:auto;padding:2px 0}
+.grp-item{display:flex;align-items:center;gap:6px;padding:3px 7px;border-radius:4px;cursor:pointer;font-size:10px;color:rgba(255,255,255,.8);transition:background .15s}
+.grp-item:hover{background:rgba(255,255,255,.06)}
+.grp-item.on{background:rgba(255,192,0,.14);color:#FFC000;font-weight:600}
+.grp-item input{accent-color:#FFC000;cursor:pointer}
+.grp-footer{display:flex;gap:8px;margin-top:10px;justify-content:flex-end;align-items:center}
+.btn-del{padding:4px 10px;font-size:10px;background:rgba(192,0,0,.18);border:1px solid rgba(192,0,0,.35);border-radius:4px;cursor:pointer;color:#ff8080;font-weight:600;margin-right:auto}
+.btn-create{padding:5px 16px;font-size:11px;background:#FFC000;border:none;border-radius:4px;cursor:pointer;font-weight:700;color:#1F3864}
+.main{padding:14px 18px;max-width:1300px;margin:0 auto}
+.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:10px}
+.kpi{background:#fff;border-radius:8px;padding:12px 14px;border-top:3px solid #2B5EA7;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.kpi-label{font-size:9px;font-weight:600;color:#44546A;text-transform:uppercase;letter-spacing:.05em}
+.kpi-val{font-size:20px;font-weight:700;margin-top:4px}
+.row2{display:grid;grid-template-columns:1fr 1fr 1fr 200px;gap:8px;margin-bottom:10px}
+.card{background:#fff;border-radius:8px;padding:12px 14px;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.card-title{font-size:11px;font-weight:700;color:#1F3864;margin-bottom:6px;display:flex;justify-content:space-between;align-items:baseline}
+.card-title .val{font-size:13px;font-weight:700}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px}
+.row4{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.row5{margin-bottom:10px}
+.row6{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.rank{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.rank-num{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0}
+.rank-info{flex:1}
+.rank-row{display:flex;justify-content:space-between;font-size:10px}
+.rank-bar{background:#F0F0F0;border-radius:2px;height:5px;margin-top:2px}
+.rank-fill{border-radius:2px;height:5px;transition:width .3s}
+.rank-pct{font-size:9px;font-weight:700;color:#44546A;width:28px;text-align:right}
+.bw-item{display:flex;justify-content:space-between;align-items:center;padding-bottom:4px;margin-bottom:4px;border-bottom:1px solid #f0f0f0;font-size:9px}
+.bw-item:last-child{border:none;margin:0;padding:0}
+.bw-label{color:#44546A;font-weight:600}
+.bw-name{font-weight:700;font-size:10px}
+.cat-legend{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:4px}
+.cat-dot{width:7px;height:7px;border-radius:2px;display:inline-block}
+.cat-legend span{font-size:8px;display:flex;align-items:center;gap:3px}
+.var-item{margin-bottom:5px}
+.var-row{display:flex;justify-content:space-between;font-size:8px;color:#44546A;font-weight:600}
+.var-bar{background:#F0F0F0;border-radius:2px;height:7px;margin-top:2px}
+.var-fill{border-radius:2px;height:7px}
+canvas{max-width:100%;max-height:100%}
+@media(max-width:900px){.kpis{grid-template-columns:repeat(3,1fr)}.row2{grid-template-columns:1fr 1fr}.row3,.row4,.row6{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<!-- PROTECCIÓN: Solo accesible con token válido desde Stripe -->
+<div id="accessDenied" style="display:none;position:fixed;inset:0;background:#1F3864;z-index:99999;display:flex;align-items:center;justify-content:center;font-family:'Segoe UI',sans-serif">
+  <div style="text-align:center;color:#fff;padding:40px">
+    <div style="font-size:60px;margin-bottom:20px">🔒</div>
+    <h1 style="font-size:28px;margin-bottom:12px">Acceso Denegado</h1>
+    <p style="color:rgba(255,255,255,.6);font-size:15px;margin-bottom:30px;line-height:1.6">No tienes acceso a esta aplicación.<br>Necesitas realizar el pago para acceder.</p>
+    <a href="index.html" style="display:inline-block;background:#FFC000;color:#1F3864;padding:14px 36px;border-radius:6px;text-decoration:none;font-weight:700;font-size:15px">Ir a la página de compra</a>
+  </div>
+</div>
+
+<script>
+(function(){
+  // ===== CONFIGURACIÓN =====
+  // Cambia esta clave secreta por una propia (larga y aleatoria)
+  var SECRET_TOKEN = 'jgs_analisis_2026_xK9mP2vL7wQ4';
+  
+  // Verificar token en la URL
+  var params = new URLSearchParams(window.location.search);
+  var token = params.get('token');
+  
+  if(token === SECRET_TOKEN){
+    // Token válido: guardar acceso y limpiar URL
+    sessionStorage.setItem('jgs_access', 'granted');
+    // Limpiar el token de la URL para que no sea visible
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+  
+  // Verificar si tiene acceso (por token o sesión activa)
+  if(sessionStorage.getItem('jgs_access') !== 'granted'){
+    // Sin acceso: mostrar pantalla de bloqueo y ocultar todo lo demás
+    document.addEventListener('DOMContentLoaded', function(){
+      document.getElementById('accessDenied').style.display = 'flex';
+      // Ocultar contenido de la app
+      var elements = document.body.children;
+      for(var i = 0; i < elements.length; i++){
+        if(elements[i].id !== 'accessDenied'){
+          elements[i].style.display = 'none';
+        }
+      }
+    });
+  } else {
+    // Con acceso: ocultar pantalla de bloqueo
+    document.addEventListener('DOMContentLoaded', function(){
+      var denied = document.getElementById('accessDenied');
+      if(denied) denied.style.display = 'none';
+    });
+  }
+})();
+</script>
+
+<div class="drop-overlay" id="dropOverlay">
+  <div class="drop-box">
+    <div class="icon">📊</div>
+    <h2>Suelta tu Excel aquí</h2>
+    <p>Arrastra un archivo <strong>.xlsx</strong> con la pestaña <strong>"Datos"</strong><br>
+    Columnas necesarias: Fecha, Cliente, Variedad,<br>Importe Venta, Total Coste, Margen Bruto</p>
+  </div>
+</div>
+
+<div class="hdr">
+  <div class="hdr-top">
+    <div class="logo">
+      <div class="logo-bar"></div>
+      <div>
+        <h1>Analisis J.G.S.</h1>
+        <p id="subtitle">Sep 2025 — Ene 2026 · Dashboard de producción</p>
+      </div>
+      <label class="file-info" title="Cargar archivo Excel">
+        📂 Cargar Excel
+        <input type="file" id="fileInput" accept=".xlsx,.xls" onchange="handleFileInput(this)">
+      </label>
+    </div>
+    <div class="flt">
+      <label>Año</label>
+      <select id="fYear"><option value="">Todos</option><option value="2025">2025</option><option value="2026">2026</option></select>
+      <label>Mes</label>
+      <select id="fMonth"><option value="">Todos</option><option value="9">Sep</option><option value="10">Oct</option><option value="11">Nov</option><option value="12">Dic</option><option value="1">Ene</option></select>
+      <label>Cliente</label>
+      <select id="fClient"></select>
+      <button class="btn btn-grp" id="btnGrp" onclick="toggleGrpPanel()">＋ Crear Grupo</button>
+      <button class="btn btn-gold" onclick="clearFilters()">Limpiar</button>
+    </div>
+  </div>
+  <div class="grp-panel" id="grpPanel">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <h3>Crear Grupo de Clientes</h3>
+      <span id="grpCount" style="font-size:10px;color:rgba(255,255,255,.55)">0 seleccionados</span>
+    </div>
+    <input type="text" class="grp-search" id="grpName" placeholder="Nombre del grupo (ej: Grupo Sur)" style="border-color:rgba(255,192,0,.4);margin-bottom:6px">
+    <input type="text" class="grp-search" id="grpSearch" placeholder="Buscar cliente..." oninput="renderGrpList()">
+    <div class="grp-list" id="grpList"></div>
+    <div class="grp-footer">
+      <button class="btn-del" id="btnDelGrps" style="display:none" onclick="deleteGroups()">🗑 Eliminar grupos</button>
+      <button class="btn-create" onclick="createGroup()">✓ Crear grupo y aplicar</button>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="kpis" id="kpis"></div>
+  <div class="row2">
+    <div class="card"><div class="card-title"><span>Total Ventas Mensuales</span><span class="val" id="sparkVal1" style="color:#2B5EA7"></span></div><div style="height:65px"><canvas id="spark1"></canvas></div></div>
+    <div class="card"><div class="card-title"><span>Total Coste Campo</span><span class="val" id="sparkVal2" style="color:#C55A11"></span></div><div style="height:65px"><canvas id="spark2"></canvas></div></div>
+    <div class="card"><div class="card-title"><span>Total Beneficio Bruto</span><span class="val" id="sparkVal3" style="color:#548235"></span></div><div style="height:65px"><canvas id="spark3"></canvas></div></div>
+    <div class="card" id="bwCard"></div>
+  </div>
+  <div class="row3">
+    <div class="card"><div class="card-title"><span>Top 10 Ventas</span><span class="val" id="top10Val" style="color:#2B5EA7"></span></div><div style="height:240px"><canvas id="chartTop10"></canvas></div></div>
+    <div class="card"><div class="card-title"><span>Top 5 Beneficio</span><span class="val" id="top5BenVal" style="color:#548235"></span></div><div style="height:240px"><canvas id="chartTop5B"></canvas></div></div>
+    <div class="card"><div class="card-title"><span>Top 5 Ventas Variedad</span></div><div style="display:flex;gap:6px"><div style="flex:1"><canvas id="chartCat" style="max-height:120px"></canvas><div class="cat-legend" id="catLegend"></div></div><div style="flex:1" id="varBars"></div></div></div>
+  </div>
+  <div class="row4">
+    <div class="card"><div class="card-title"><span>📊 Facturación Mensual</span><span class="val" id="factVal" style="color:#2B5EA7"></span></div><div style="height:200px"><canvas id="chartFact"></canvas></div></div>
+    <div class="card"><div class="card-title"><span>📊 Margen Bruto Mensual</span><span class="val" id="margVal" style="color:#548235"></span></div><div style="height:200px"><canvas id="chartMarg"></canvas></div></div>
+  </div>
+  <div class="row5 card"><div class="card-title"><span>📈 Ventas Mes</span><span style="font-size:10px;color:#44546A">Evolución mensual completa</span></div><div style="height:220px"><canvas id="chartLine"></canvas></div></div>
+  <div class="row6">
+    <div class="card"><div style="font-size:11px;font-weight:700;color:#1F3864;margin-bottom:8px">🏆 Top 5 Ventas por Cliente</div><div id="rank1"></div></div>
+    <div class="card"><div style="font-size:11px;font-weight:700;color:#1F3864;margin-bottom:8px">🏆 Top 5 Beneficio por Cliente</div><div id="rank2"></div></div>
+  </div>
+</div>
+
+<script>
+let RAW=[{y:2025,m:9,c:"BOLLO NATURAL FRUIT, SLU - 116",v:"AJUSTE ENCARGADO",s:0,co:440.4,mg:-440.4},{y:2025,m:9,c:"BOLLO NATURAL FRUIT, SLU - 116",v:"MANDARINA IWASAKI",s:92047.97,co:76538.95,mg:15509.02},{y:2025,m:9,c:"BOLLO NATURAL FRUIT, SLU - 116",v:"MANDARINA MARISOL",s:8780.38,co:7113.55,mg:1666.83},{y:2025,m:9,c:"BOLLO NATURAL FRUIT, SLU - 116",v:"TRANSPORTE",s:0,co:3001.2,mg:-3001.2},{y:2025,m:9,c:"CITRUS GEA BELMONTE, S.L. - 15",v:"LIMON JORNAL",s:21043.16,co:19457.36,mg:1585.8},{y:2025,m:9,c:"MARIANO SAEZ MARKETING, SL - 24",v:"HORAS QUITAR HIERBA",s:2268,co:2164.32,mg:103.68},{y:2025,m:9,c:"ROYMAGA, SL - 118",v:"LIMON JORNAL",s:15226.88,co:15361.48,mg:-134.6},{y:2025,m:9,c:"SANCHEZ FRENERIA 2010 SL - 1177",v:"HORAS CLAREO",s:2154,co:1816.26,mg:337.74},{y:2025,m:9,c:"SAT SAN CAYETANO - 13",v:"POMELO PALOT",s:1961.48,co:1675.77,mg:285.71},{y:2025,m:9,c:"SINGULAR FRUIT COMPANY S.L - 123",v:"LIMON JORNAL",s:2611.2,co:3123.98,mg:-512.78},{y:2025,m:10,c:"AGRIFU, SA - 1189",v:"LIMON JORNAL",s:8107.68,co:6723.54,mg:1384.14},{y:2025,m:10,c:"AGRIFU, SA - 1189",v:"LIMON PALOT",s:2176.64,co:340.56,mg:1836.08},{y:2025,m:10,c:"BOLLO NATURAL FRUIT, SLU - 116",v:"LIMON PALOT",s:12390,co:9747.13,mg:2642.87},{y:2025,m:10,c:"BOLLO NATURAL FRUIT, SLU - 116",v:"MANDARINA CLEMENULES",s:2844.8,co:2281.73,mg:563.07},{y:2025,m:10,c:"BOLLO NATURAL FRUIT, SLU - 116",v:"MANDARINA MARISOL",s:49072.8,co:37936.2,mg:11136.6},{y:2025,m:10,c:"BOLLO NATURAL FRUIT, SLU - 116",v:"MANDARINA OROGRANDE CAJA",s:12680.08,co:11969.58,mg:710.5},{y:2025,m:10,c:"BOLLO NATURAL FRUIT, SLU - 116",v:"MANDARINA ORONULES CAJA",s:73169.6,co:62354.7,mg:10814.9},{y:2025,m:10,c:"BOLLO NATURAL FRUIT, SLU - 116",v:"MANDARINA ORONULES HOJA",s:20871.88,co:16296.31,mg:4575.57},{y:2025,m:10,c:"CITRICOS GUILLEM, SL - 1185",v:"MANDARINA OROGROS",s:5307.4,co:3952.93,mg:1354.47},{y:2025,m:10,c:"CITRICOS GUILLEM, SL - 1185",v:"MANDARINA ORONULES CAJA",s:18814.32,co:15387.9,mg:3426.42},{y:2025,m:10,c:"CITRICOS GUILLEM, SL - 1185",v:"MANDARINA ORONULES HOJA",s:2512.27,co:1826.47,mg:685.8},{y:2025,m:10,c:"CITRUS GEA BELMONTE, S.L. - 15",v:"JORNAL CAJERO LIMON",s:5452.48,co:5026.66,mg:425.82},{y:2025,m:10,c:"CITRUS GEA BELMONTE, S.L. - 15",v:"LIMON CAJA",s:8251.25,co:8498.79,mg:-247.54},{y:2025,m:10,c:"CITRUS GEA BELMONTE, S.L. - 15",v:"LIMON JORNAL",s:53843.24,co:49251.16,mg:4592.08},{y:2025,m:10,c:"FORCAFRUIT S,L - 1188",v:"LIMON JORNAL",s:1587.52,co:1302.73,mg:284.79},{y:2025,m:10,c:"ROYMAGA, SL - 118",v:"LIMON JORNAL",s:96853.76,co:62010.96,mg:34842.8},{y:2025,m:10,c:"ROYMAGA, SL - 118",v:"LIMON PALOT",s:0.1,co:11998.36,mg:-11998.27},{y:2025,m:10,c:"SAT SAN CAYETANO - 13",v:"POMELO PALOT",s:87880.5,co:65984.77,mg:21895.73},{y:2025,m:10,c:"SAT SAN CAYETANO - 13",v:"POMELO PALOT 2",s:2681.1,co:1973.23,mg:707.87},{y:2025,m:10,c:"SAT VERSOL N.108 CV - 1184",v:"MANDARINA ORONULES CAJA",s:33.04,co:29.61,mg:3.43},{y:2025,m:10,c:"SAT VERSOL N.108 CV - 1184",v:"MANDARINA ORONULES HOJA",s:6472.22,co:5090.73,mg:1381.49},{y:2025,m:10,c:"TOMAS GUILLEN - 1109",v:"LIMON JORNAL",s:3849.28,co:3005.45,mg:843.83},{y:2025,m:11,c:"AGRICOLA LA PONDEROSA, SL - 46",v:"HORAS MANTENIMIENTO FINCA",s:4676.56,co:4333.44,mg:343.12},{y:2025,m:11,c:"AGRIFU, SA - 1189",v:"LIMON JORNAL",s:39631.36,co:26577.4,mg:13053.96},{y:2025,m:11,c:"AGRIOS EL CARRIL, SL - 99",v:"LIMON JORNAL",s:25719.68,co:16387.58,mg:9332.1},{y:2025,m:11,c:"BOLLO NATURAL FRUIT, SLU - 116",v:"MANDARINA OROGRANDE HOJA",s:18706.74,co:15747.26,mg:2959.48},{y:2025,m:11,c:"BOLLO NATURAL FRUIT, SLU - 116",v:"MANDARINA EARLY PRIDE",s:887.5,co:563.97,mg:323.53},{y:2025,m:11,c:"BOLLO NATURAL FRUIT, SLU - 116",v:"MANDARINA EARLY PRIDE 2",s:3888.7,co:2671.01,mg:1217.69},{y:2025,m:11,c:"BOLLO NATURAL FRUIT, SLU - 116",v:"MANDARINA EARLY PRIDE HOJA",s:19107.92,co:15030.03,mg:4077.89},{y:2025,m:11,c:"BOLLO NATURAL FRUIT, SLU - 116",v:"MANDARINA OROGRANDE CAJA",s:110040.98,co:87923.97,mg:22117.01},{y:2025,m:11,c:"BOLLO NATURAL FRUIT, SLU - 116",v:"MANDARINA ORONULES CAJA",s:139633.79,co:114189.47,mg:25444.33},{y:2025,m:11,c:"BOLLO NATURAL FRUIT, SLU - 116",v:"MANDARINA ORONULES HOJA",s:21568.17,co:18522.95,mg:3045.22},{y:2025,m:11,c:"CITRISOL, S. COOP. - 71",v:"LIMON CAJA",s:1147.5,co:1019.32,mg:128.18},{y:2025,m:11,c:"CITRISOL, S. COOP. - 71",v:"LIMON PALOT",s:8343,co:7436.61,mg:906.39},{y:2025,m:11,c:"CITRISOL, S. COOP. - 71",v:"MANDARINA EARLY PRIDE 2",s:12233.6,co:9769.95,mg:2463.65},{y:2025,m:11,c:"CITRISOL, S. COOP. - 71",v:"MANDARINA EARLY PRIDE HOJA 2",s:1503.12,co:685.06,mg:818.06},{y:2025,m:11,c:"CITRISOL, S. COOP. - 71",v:"NARANJA CAJA",s:1504.8,co:1364.38,mg:140.42},{y:2025,m:11,c:"CITRUS GEA BELMONTE, S.L. - 15",v:"JORNAL CAJERO LIMON",s:6815.6,co:6315.55,mg:500.05},{y:2025,m:11,c:"CITRUS GEA BELMONTE, S.L. - 15",v:"LIMON CAJA",s:12530,co:12905.87,mg:-375.87},{y:2025,m:11,c:"CITRUS GEA BELMONTE, S.L. - 15",v:"LIMON JORNAL",s:42341.92,co:38504.41,mg:3837.5},{y:2025,m:11,c:"ROYMAGA, SL - 118",v:"LIMON JORNAL",s:124264.96,co:76814.15,mg:47450.81},{y:2025,m:11,c:"ROYMAGA, SL - 118",v:"LIMON PALOT",s:0,co:13660.75,mg:-13660.75},{y:2025,m:11,c:"SAT SAN CAYETANO - 13",v:"POMELO PALOT",s:84321.95,co:62075.41,mg:22246.54},{y:2025,m:11,c:"SAT SAN CAYETANO - 13",v:"POMELO PALOT 2",s:18264.42,co:13882.08,mg:4382.33},{y:2025,m:11,c:"SINGULAR FRUIT COMPANY S.L - 123",v:"LIMON JORNAL",s:6916.48,co:4382.95,mg:2533.53},{y:2025,m:12,c:"AGRICOLA LA PONDEROSA, SL - 46",v:"HORAS MANTENIMIENTO FINCA",s:668.08,co:564.21,mg:103.87},{y:2025,m:12,c:"AGRIFU, SA - 1189",v:"LIMON JORNAL",s:4138.88,co:2068.12,mg:2070.76},{y:2025,m:12,c:"AGRIFU, SA - 1189",v:"LIMON PALOT",s:32595.84,co:23280.49,mg:9315.35},{y:2025,m:12,c:"AGRIOS EL CARRIL, SL - 99",v:"LIMON JORNAL",s:2563.2,co:1590.62,mg:972.58},{y:2025,m:12,c:"AGRIOS EL CARRIL, SL - 99",v:"LIMON PALOT",s:35514.56,co:25539.39,mg:9975.17},{y:2025,m:12,c:"BOLLO NATURAL FRUIT, SLU - 116",v:"MANDARINA CLEMENVILLA CAJA",s:407614.62,co:331318.34,mg:76296.28},{y:2025,m:12,c:"BOLLO NATURAL FRUIT, SLU - 116",v:"MANDARINA CLEMENVILLA HOJA",s:43194.32,co:35355.16,mg:7839.16},{y:2025,m:12,c:"BOLLO NATURAL FRUIT, SLU - 116",v:"MANDARINA TANGO HOJA",s:6391.6,co:5172.12,mg:1219.48},{y:2025,m:12,c:"BOLLO NATURAL FRUIT, SLU - 116",v:"NARANJA NAVEL",s:1750.24,co:1483.32,mg:266.91},{y:2025,m:12,c:"CITRISOL, S. COOP. - 71",v:"LIMON CAJA",s:79.2,co:78.98,mg:0.22},{y:2025,m:12,c:"CITRISOL, S. COOP. - 71",v:"LIMON PALOT",s:2508,co:2209.56,mg:298.44},{y:2025,m:12,c:"CITRISOL, S. COOP. - 71",v:"MANDARINA CLEMENVILLA CAJA",s:41518.95,co:35316.16,mg:6202.79},{y:2025,m:12,c:"CITRUS GEA BELMONTE, S.L. - 15",v:"JORNAL CAJERO LIMON",s:7837.94,co:7235.83,mg:602.11},{y:2025,m:12,c:"CITRUS GEA BELMONTE, S.L. - 15",v:"LIMON CAJA",s:5762.75,co:5935.66,mg:-172.91},{y:2025,m:12,c:"CITRUS GEA BELMONTE, S.L. - 15",v:"LIMON JORNAL",s:43790.23,co:39752.26,mg:4037.97},{y:2025,m:12,c:"ROYMAGA, SL - 118",v:"LIMON JORNAL",s:20803.84,co:10789.87,mg:10013.97},{y:2025,m:12,c:"ROYMAGA, SL - 118",v:"LIMON PALOT",s:120557.92,co:84561.02,mg:35996.9},{y:2025,m:12,c:"SAT SAN CAYETANO - 13",v:"POMELO PALOT",s:54401.74,co:40562.91,mg:13838.83},{y:2025,m:12,c:"SAT SAN CAYETANO - 13",v:"POMELO PALOT 2",s:21802.62,co:17446.34,mg:4356.29},{y:2025,m:12,c:"TOMAS GUILLEN - 1109",v:"LIMON JORNAL",s:10192,co:8743.84,mg:1448.16},{y:2025,m:12,c:"TOMAS GUILLEN - 1109",v:"LIMON PALOT",s:4491.2,co:1691.85,mg:2799.35},{y:2026,m:1,c:"AGRIFU, SA - 1189",v:"LIMON PALOT",s:17850.96,co:13932.42,mg:3918.54},{y:2026,m:1,c:"AGRIOS EL CARRIL, SL - 99",v:"LIMON PALOT",s:112871.64,co:87539.73,mg:25331.91},{y:2026,m:1,c:"BOLLO NATURAL FRUIT, SLU - 116",v:"MANDARINA CLEMENVILLA CAJA",s:148041.12,co:121300.74,mg:26740.39},{y:2026,m:1,c:"BOLLO NATURAL FRUIT, SLU - 116",v:"MANDARINA CLEMENVILLA HOJA",s:8778.9,co:6109.92,mg:2668.98},{y:2026,m:1,c:"BOLLO NATURAL FRUIT, SLU - 116",v:"MANDARINA NADORCOTT CAJA",s:109053.42,co:88644.88,mg:20408.54},{y:2026,m:1,c:"BOLLO NATURAL FRUIT, SLU - 116",v:"MANDARINA TANGO CAJA",s:100749.18,co:79119.01,mg:21630.17},{y:2026,m:1,c:"BOLLO NATURAL FRUIT, SLU - 116",v:"MANDARINA TANGO HOJA",s:17502.52,co:14613.27,mg:2889.25},{y:2026,m:1,c:"BOLLO NATURAL FRUIT, SLU - 116",v:"NARANJA FUKUMOTO",s:34886.2,co:28276.06,mg:6610.13},{y:2026,m:1,c:"BOLLO NATURAL FRUIT, SLU - 116",v:"NARANJA LANELATE CAJA",s:6544.48,co:5204.11,mg:1340.36},{y:2026,m:1,c:"BOLLO NATURAL FRUIT, SLU - 116",v:"NARANJA NAVEL",s:7354.05,co:6195.58,mg:1158.47},{y:2026,m:1,c:"CITRISOL, S. COOP. - 71",v:"MANDARINA LEANRI CAJA",s:12968.38,co:907.79,mg:12060.59},{y:2026,m:1,c:"CITRISOL, S. COOP. - 71",v:"NARANJA SANGUINELLI",s:6286.5,co:5826.97,mg:459.53},{y:2026,m:1,c:"CITRUS GEA BELMONTE, S.L. - 15",v:"JORNAL CAJERO LIMON",s:5793.26,co:5350.23,mg:443.03},{y:2026,m:1,c:"CITRUS GEA BELMONTE, S.L. - 15",v:"LIMON CAJA",s:6020,co:6197.28,mg:-177.28},{y:2026,m:1,c:"CITRUS GEA BELMONTE, S.L. - 15",v:"LIMON JORNAL",s:42512.3,co:38347.5,mg:4164.8},{y:2026,m:1,c:"FORCAFRUIT S,L - 1188",v:"MANDARINA CAJA",s:559.26,co:450.03,mg:109.23},{y:2026,m:1,c:"GLOBAL AGRO INVESTMENT, SL - 1202",v:"MANDARINA ORRI CAJA",s:12700.8,co:9880.95,mg:2819.85},{y:2026,m:1,c:"ROYMAGA, SL - 118",v:"LIMON PALOT",s:65217.72,co:49835.29,mg:15382.43},{y:2026,m:1,c:"SAT SAN CAYETANO - 13",v:"POMELO PALOT 2",s:108329.06,co:82048.86,mg:26280.2}];
+
+const MN={1:"Ene",2:"Feb",3:"Mar",4:"Abr",5:"May",6:"Jun",7:"Jul",8:"Ago",9:"Sep",10:"Oct",11:"Nov",12:"Dic"};
+let CLIENTS=[...new Set(RAW.map(r=>r.c))].sort();
+const PIE_C=["#2B5EA7","#5B9BD5","#A5C8E1","#D4E6F1","#8DB4D8"];
+let groups=[], grpChecked={}, charts={};
+
+function sn(c){let n=c.split(" - ")[0].split(",")[0].replace(/ S\.?L\.?U?\.?$/i,"").replace(/ S\.?A\.?$/i,"").replace(/ S\. COOP\.?$/i,"").trim();return n.length>18?n.substring(0,18)+"…":n}
+function fN(n){return n==null||isNaN(n)?"0":new Intl.NumberFormat('es-ES',{maximumFractionDigits:0}).format(Math.round(n))}
+function fE(n){return fN(n)+" €"}
+function fK(n){if(Math.abs(n)>=1e6)return(n/1e6).toFixed(1)+"M";if(Math.abs(n)>=1e3)return(n/1e3).toFixed(0)+"K";return fN(n)}
+
+function buildClientSelect(){
+  const sel=document.getElementById('fClient');
+  const cur=sel.value;
+  sel.innerHTML='<option value="">Todos</option>';
+  if(groups.length){
+    const og=document.createElement('optgroup');og.label="— Grupos —";
+    groups.forEach((g,i)=>{const o=document.createElement('option');o.value="__grp__"+i;o.textContent="📁 "+g.name+" ("+g.clients.length+")";o.style.color="#2B5EA7";o.style.fontWeight="600";og.appendChild(o)});
+    sel.appendChild(og);
+  }
+  const og2=document.createElement('optgroup');og2.label="— Clientes —";
+  CLIENTS.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;og2.appendChild(o)});
+  sel.appendChild(og2);
+  sel.value=cur||"";
+  document.getElementById('btnDelGrps').style.display=groups.length?'':'none';
+}
+
+function getActiveGroup(){
+  const v=document.getElementById('fClient').value;
+  if(!v)return null;
+  if(v.startsWith("__grp__")){
+    const g=groups[+v.replace("__grp__","")];
+    return g||null;
+  }
+  return null;
+}
+
+function getActiveClients(){
+  const v=document.getElementById('fClient').value;
+  if(!v)return null;
+  const g=getActiveGroup();
+  if(g)return g.clients;
+  return[v];
+}
+
+function getFiltered(){
+  const y=document.getElementById('fYear').value;
+  const m=document.getElementById('fMonth').value;
+  const v=document.getElementById('fClient').value;
+  const grp=getActiveGroup();
+  const grpName=grp?grp.name:null;
+  const grpSet=grp?new Set(grp.clients):null;
+  const singleClient=(!grp&&v)?v:null;
+  const out=[];
+  for(const r of RAW){
+    if(y&&r.y!==+y)continue;
+    if(m&&r.m!==+m)continue;
+    if(singleClient&&r.c!==singleClient)continue;
+    // Group: no filter, just rename members
+    if(grpSet&&grpSet.has(r.c)){
+      out.push({y:r.y,m:r.m,c:grpName,v:r.v,s:r.s,co:r.co,mg:r.mg});
+    }else{
+      out.push(r);
+    }
+  }
+  return out;
+}
+
+function toggleGrpPanel(){
+  const p=document.getElementById('grpPanel');
+  const b=document.getElementById('btnGrp');
+  const show=!p.classList.contains('show');
+  p.classList.toggle('show');
+  b.classList.toggle('active');
+  b.textContent=show?"✕ Cerrar":"＋ Crear Grupo";
+  if(show){grpChecked={};document.getElementById('grpSearch').value='';document.getElementById('grpName').value='';renderGrpList()}
+}
+
+function renderGrpList(){
+  const q=document.getElementById('grpSearch').value.toLowerCase();
+  const list=document.getElementById('grpList');
+  list.innerHTML='';
+  CLIENTS.filter(c=>!q||c.toLowerCase().includes(q)).forEach(c=>{
+    const d=document.createElement('label');
+    d.className='grp-item'+(grpChecked[c]?' on':'');
+    d.innerHTML=`<input type="checkbox" ${grpChecked[c]?'checked':''}><span>${c}</span>`;
+    d.querySelector('input').onchange=function(){grpChecked[c]=this.checked;d.className='grp-item'+(this.checked?' on':'');updateGrpCount()};
+    list.appendChild(d);
+  });
+  updateGrpCount();
+}
+
+function updateGrpCount(){
+  const n=Object.values(grpChecked).filter(Boolean).length;
+  document.getElementById('grpCount').textContent=n+' seleccionados';
+}
+
+function createGroup(){
+  const sel=CLIENTS.filter(c=>grpChecked[c]);
+  if(sel.length<2){alert("Selecciona al menos 2 clientes");return}
+  const firstName=sn(sel[0]);
+  const custom=document.getElementById('grpName').value.trim();
+  const name=custom||`Grupo ${firstName}`;
+  groups.push({name,clients:sel});
+  buildClientSelect();
+  document.getElementById('fClient').value="__grp__"+(groups.length-1);
+  toggleGrpPanel();
+  update();
+}
+
+function deleteGroups(){
+  if(!confirm("¿Eliminar todos los grupos?"))return;
+  groups=[];
+  document.getElementById('fClient').value="";
+  buildClientSelect();
+  update();
+}
+
+function clearFilters(){
+  document.getElementById('fYear').value="";
+  document.getElementById('fMonth').value="";
+  document.getElementById('fClient').value="";
+  update();
+}
+
+function destroyChart(id){if(charts[id]){charts[id].destroy();delete charts[id]}}
+
+function makeChart(id,cfg){
+  destroyChart(id);
+  const ctx=document.getElementById(id);
+  if(!ctx)return;
+  charts[id]=new Chart(ctx,cfg);
+}
+
+function update(){
+  const data=getFiltered();
+  let ts=0,tc=0,tm=0;
+  data.forEach(r=>{ts+=r.s;tc+=r.co;tm+=r.mg});
+  const pct=ts?(tm/ts*100):0;
+
+  // KPIs
+  const kpis=[
+    {l:"💰 Total Ventas",v:fE(ts),col:"#2B5EA7"},
+    {l:"🌾 Cost. Campo",v:fE(tc*.77),col:"#C55A11"},
+    {l:"🏥 Ss.Ss.",v:fE(tc*.154),col:"#5B9BD5"},
+    {l:"📋 Gast. Gen.",v:fE(tc*.076),col:"#70AD47"},
+    {l:"📊 Ben. Bruto",v:fE(tm),col:tm>=0?"#548235":"#C00000"},
+    {l:"📈 Margen Bruto",v:pct.toFixed(1)+"%",col:pct>=0?"#548235":"#C00000"}
+  ];
+  document.getElementById('kpis').innerHTML=kpis.map(k=>`<div class="kpi" style="border-top-color:${k.col}"><div class="kpi-label">${k.l}</div><div class="kpi-val" style="color:${k.col}">${k.v}</div></div>`).join('');
+
+  // Monthly
+  const mmap={};
+  data.forEach(r=>{const k=r.y+'-'+String(r.m).padStart(2,'0');if(!mmap[k])mmap[k]={n:MN[r.m]+" "+String(r.y).slice(2),s:0,co:0,mg:0,k};mmap[k].s+=r.s;mmap[k].co+=r.co;mmap[k].mg+=r.mg});
+  const monthly=Object.values(mmap).sort((a,b)=>a.k.localeCompare(b.k));
+  const mLabels=monthly.map(m=>m.n),mSales=monthly.map(m=>m.s),mCost=monthly.map(m=>m.co),mMarg=monthly.map(m=>m.mg);
+
+  // Sparklines
+  document.getElementById('sparkVal1').textContent=fE(ts);
+  document.getElementById('sparkVal2').textContent=fE(tc);
+  document.getElementById('sparkVal3').textContent=fE(tm);
+
+  [{id:'spark1',d:mSales,c:'#2B5EA7'},{id:'spark2',d:mCost,c:'#C55A11'},{id:'spark3',d:mMarg,c:'#548235'}].forEach(sp=>{
+    makeChart(sp.id,{type:'line',data:{labels:mLabels,datasets:[{data:sp.d,borderColor:sp.c,borderWidth:2,fill:true,backgroundColor:sp.c+'20',pointRadius:0,tension:.4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{enabled:false}},scales:{x:{display:false},y:{display:false}}}});
+  });
+
+  // Best/Worst
+  const bw=document.getElementById('bwCard');
+  if(monthly.length){
+    const sS=[...monthly].sort((a,b)=>b.s-a.s);const sM=[...monthly].sort((a,b)=>b.mg-a.mg);
+    bw.innerHTML=[
+      {i:"🏆",l:"Mayor Ventas",n:sS[0].n,v:fE(sS[0].s),c:"#2B5EA7"},
+      {i:"📉",l:"Menor Ventas",n:sS[sS.length-1].n,v:fE(sS[sS.length-1].s),c:"#A5A5A5"},
+      {i:"⭐",l:"Mayor Beneficio",n:sM[0].n,v:fE(sM[0].mg),c:"#548235"},
+      {i:"⚠️",l:"Menor Beneficio",n:sM[sM.length-1].n,v:fE(sM[sM.length-1].mg),c:"#C00000"}
+    ].map(x=>`<div class="bw-item"><div><span>${x.i}</span> <span class="bw-label">${x.l}</span><br><span class="bw-name" style="color:${x.c}">${x.n}</span></div><span style="font-size:10px;font-weight:700;color:${x.c}">${x.v}</span></div>`).join('');
+  }
+
+  // Top clients
+  const cmap={};data.forEach(r=>{const n=sn(r.c);if(!cmap[n])cmap[n]={n,s:0,mg:0};cmap[n].s+=r.s;cmap[n].mg+=r.mg});
+  const top10=Object.values(cmap).filter(c=>c.s>0).sort((a,b)=>b.s-a.s).slice(0,10);
+  const top5b=Object.values(cmap).sort((a,b)=>b.mg-a.mg).slice(0,5);
+
+  document.getElementById('top10Val').textContent=fE(top10.reduce((a,c)=>a+c.s,0));
+  makeChart('chartTop10',{type:'bar',data:{labels:top10.map(c=>c.n),datasets:[{data:top10.map(c=>c.s),backgroundColor:'#2B5EA7',borderRadius:3,barThickness:14}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>fE(ctx.raw)}}},scales:{x:{ticks:{callback:v=>fK(v),font:{size:9}},grid:{display:false}},y:{ticks:{font:{size:8}}}}}});
+
+  document.getElementById('top5BenVal').textContent=fE(top5b.reduce((a,c)=>a+c.mg,0));
+  makeChart('chartTop5B',{type:'bar',data:{labels:top5b.map(c=>c.n),datasets:[{data:top5b.map(c=>c.mg),backgroundColor:top5b.map(c=>c.mg>=0?'#548235':'#C00000'),borderRadius:3,barThickness:14}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>fE(ctx.raw)}}},scales:{x:{ticks:{callback:v=>fK(v),font:{size:9}},grid:{display:false}},y:{ticks:{font:{size:8}}}}}});
+
+  // Category donut
+  const catMap={};data.forEach(r=>{const v=(r.v||"").toUpperCase();let cat="Otros";if(v.includes("MANDARINA")||v.includes("MADANRINA"))cat="Mandarina";else if(v.includes("LIMON"))cat="Limón";else if(v.includes("POMELO"))cat="Pomelo";else if(v.includes("NARANJA"))cat="Naranja";if(!catMap[cat])catMap[cat]={n:cat,v:0};catMap[cat].v+=r.s});
+  const cats=Object.values(catMap).filter(c=>c.v>0).sort((a,b)=>b.v-a.v);
+  makeChart('chartCat',{type:'doughnut',data:{labels:cats.map(c=>c.n),datasets:[{data:cats.map(c=>c.v),backgroundColor:PIE_C.slice(0,cats.length),borderWidth:1}]},options:{responsive:true,maintainAspectRatio:false,cutout:'50%',plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.label+": "+fE(ctx.raw)}}}}});
+  document.getElementById('catLegend').innerHTML=cats.map((c,i)=>{const p=ts?(c.v/ts*100).toFixed(0):0;return`<span><span class="cat-dot" style="background:${PIE_C[i]}"></span>${c.n} ${p}%</span>`}).join('');
+
+  // Top 5 varieties
+  const vmap={};data.forEach(r=>{if(!vmap[r.v])vmap[r.v]={n:r.v,s:0};vmap[r.v].s+=r.s});
+  const topV=Object.values(vmap).filter(v=>v.s>0).sort((a,b)=>b.s-a.s).slice(0,5);
+  document.getElementById('varBars').innerHTML=topV.map((v,i)=>{const p=ts?(v.s/ts*100):0;const n=v.n.length>24?v.n.substring(0,24)+"…":v.n;return`<div class="var-item"><div class="var-row"><span>${n}</span><span>${fK(v.s)}</span></div><div class="var-bar"><div class="var-fill" style="background:${PIE_C[i%5]};width:${Math.min(p*2.5,100)}%"></div></div></div>`}).join('');
+
+  // Facturación
+  document.getElementById('factVal').textContent=fE(ts);
+  makeChart('chartFact',{type:'bar',data:{labels:mLabels,datasets:[{data:mSales,backgroundColor:'#2B5EA7',borderRadius:4,barThickness:36}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>fE(ctx.raw)}}},scales:{x:{ticks:{font:{size:10}}},y:{ticks:{callback:v=>fK(v),font:{size:9}}}}}});
+
+  // Margen mensual
+  document.getElementById('margVal').textContent=fE(tm);
+  makeChart('chartMarg',{type:'bar',data:{labels:mLabels,datasets:[{data:mMarg,backgroundColor:mMarg.map(v=>v>=0?'#548235':'#C00000'),borderRadius:4,barThickness:36}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>fE(ctx.raw)}}},scales:{x:{ticks:{font:{size:10}}},y:{ticks:{callback:v=>fK(v),font:{size:9}}}}}});
+
+  // Ventas Mes line
+  makeChart('chartLine',{type:'line',data:{labels:mLabels,datasets:[
+    {label:'Ventas',data:mSales,borderColor:'#2B5EA7',backgroundColor:'#2B5EA720',borderWidth:2.5,pointRadius:5,pointBackgroundColor:'#2B5EA7',pointBorderColor:'#fff',pointBorderWidth:2,fill:false,tension:.2},
+    {label:'Coste',data:mCost,borderColor:'#C55A11',borderWidth:2,borderDash:[6,3],pointRadius:4,pointBackgroundColor:'#C55A11',fill:false,tension:.2},
+    {label:'Margen',data:mMarg,borderColor:'#548235',borderWidth:2,pointRadius:4,pointBackgroundColor:'#548235',fill:false,tension:.2}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:11}}},tooltip:{callbacks:{label:ctx=>ctx.dataset.label+": "+fE(ctx.raw)}}},scales:{x:{ticks:{font:{size:11}}},y:{ticks:{callback:v=>fK(v),font:{size:10}}}}}});
+
+  // Rankings
+  const medalC=["#FFC000","#A5A5A5","#C55A11","#2B5EA7","#2B5EA7"];
+  function renderRank(el,items,key,color,total){
+    el.innerHTML=items.slice(0,5).map((c,i)=>{const v=c[key];const p=total?Math.abs(v/total*100):0;return`<div class="rank"><div class="rank-num" style="background:${medalC[i]}">${i+1}</div><div class="rank-info"><div class="rank-row"><span style="font-weight:600;color:#1F3864">${c.n}</span><span style="font-weight:700;color:${color}">${fE(v)}</span></div><div class="rank-bar"><div class="rank-fill" style="background:${color};width:${Math.min(p*2,100)}%"></div></div></div><div class="rank-pct">${p.toFixed(0)}%</div></div>`}).join('');
+  }
+  renderRank(document.getElementById('rank1'),top10,'s','#2B5EA7',ts);
+  renderRank(document.getElementById('rank2'),top5b,'mg','#548235',tm);
+}
+
+document.getElementById('fYear').onchange=update;
+document.getElementById('fMonth').onchange=update;
+document.getElementById('fClient').onchange=update;
+
+buildClientSelect();
+update();
+
+// ============ DRAG & DROP + FILE INPUT ============
+let dragCount=0;
+const overlay=document.getElementById('dropOverlay');
+
+document.addEventListener('dragenter',function(e){e.preventDefault();dragCount++;overlay.classList.add('active')});
+document.addEventListener('dragleave',function(e){e.preventDefault();dragCount--;if(dragCount<=0){dragCount=0;overlay.classList.remove('active')}});
+document.addEventListener('dragover',function(e){e.preventDefault()});
+document.addEventListener('drop',function(e){
+  e.preventDefault();dragCount=0;overlay.classList.remove('active');
+  const file=e.dataTransfer.files[0];
+  if(file)processExcel(file);
+});
+
+function handleFileInput(input){
+  const file=input.files[0];
+  if(file)processExcel(file);
+  input.value='';
+}
+
+function parseDate(val){
+  if(!val)return null;
+  // Excel serial number
+  if(typeof val==='number'){
+    const d=new Date((val-25569)*86400000);
+    if(!isNaN(d))return{y:d.getFullYear(),m:d.getMonth()+1};
+  }
+  // String dd/mm/yyyy
+  const s=String(val);
+  const parts=s.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+  if(parts)return{y:+parts[3],m:+parts[2]};
+  // ISO yyyy-mm-dd
+  const iso=s.match(/(\d{4})[\/\-](\d{1,2})/);
+  if(iso)return{y:+iso[1],m:+iso[2]};
+  // Try Date parse
+  const d=new Date(val);
+  if(!isNaN(d))return{y:d.getFullYear(),m:d.getMonth()+1};
+  return null;
+}
+
+function findCol(headers,names){
+  const h=headers.map(x=>(x||'').toString().toLowerCase().trim());
+  for(const n of names){const i=h.indexOf(n.toLowerCase());if(i>=0)return i}
+  // partial match
+  for(const n of names){const nl=n.toLowerCase();const i=h.findIndex(x=>x.includes(nl));if(i>=0)return i}
+  return-1;
+}
+
+function processExcel(file){
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const wb=XLSX.read(e.target.result,{type:'array'});
+      // Try "Datos" sheet, then first sheet
+      let sheetName=wb.SheetNames.find(n=>n.toLowerCase().includes('dato'))||wb.SheetNames[0];
+      const ws=wb.Sheets[sheetName];
+      const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:null});
+
+      if(rows.length<2){alert('El archivo no tiene datos suficientes');return}
+
+      const headers=rows[0];
+      const iDate=findCol(headers,['Fecha']);
+      const iClient=findCol(headers,['Cliente']);
+      const iVar=findCol(headers,['Variedad']);
+      const iSales=findCol(headers,['Importe Venta','Importe_Venta','ImporteVenta']);
+      const iCost=findCol(headers,['Total Coste','Total_Coste','TotalCoste','Coste Total']);
+      const iMargin=findCol(headers,['Margen Bruto','Margen_Bruto','MargenBruto']);
+
+      if(iDate<0||iClient<0){
+        alert('No se encontraron las columnas mínimas: Fecha, Cliente.\n\nColumnas detectadas: '+headers.join(', '));
+        return;
+      }
+
+      const newRAW=[];
+      for(let i=1;i<rows.length;i++){
+        const r=rows[i];
+        if(!r||!r[iDate])continue;
+        const dt=parseDate(r[iDate]);
+        if(!dt)continue;
+        const client=r[iClient]?String(r[iClient]).trim():'';
+        if(!client)continue;
+        newRAW.push({
+          y:dt.y,
+          m:dt.m,
+          c:client,
+          v:iVar>=0&&r[iVar]?String(r[iVar]).trim():'Sin variedad',
+          s:iSales>=0?+(r[iSales]||0):0,
+          co:iCost>=0?+(r[iCost]||0):0,
+          mg:iMargin>=0?+(r[iMargin]||0):0
+        });
+      }
+
+      if(newRAW.length===0){alert('No se pudieron extraer registros del archivo');return}
+
+      // Replace global data
+      RAW.length=0;
+      RAW.push(...newRAW);
+      CLIENTS=[...new Set(RAW.map(r=>r.c))].sort();
+      groups=[];
+
+      // Rebuild year filter
+      const years=[...new Set(RAW.map(r=>r.y))].sort();
+      const fy=document.getElementById('fYear');
+      fy.innerHTML='<option value="">Todos</option>';
+      years.forEach(y=>{const o=document.createElement('option');o.value=y;o.textContent=y;fy.appendChild(o)});
+
+      // Rebuild month filter
+      const months=[...new Set(RAW.map(r=>r.m))].sort((a,b)=>a-b);
+      const fm=document.getElementById('fMonth');
+      fm.innerHTML='<option value="">Todos</option>';
+      months.forEach(m=>{const o=document.createElement('option');o.value=m;o.textContent=MN[m]||('Mes '+m);fm.appendChild(o)});
+
+      // Update subtitle
+      const minD=years[0], maxD=years[years.length-1];
+      const minM=Math.min(...RAW.map(r=>r.m)), maxM=Math.max(...RAW.map(r=>r.m));
+      document.getElementById('subtitle').textContent=
+        file.name+' · '+newRAW.length+' registros · '+MN[minM]+' '+minD+' — '+MN[maxM]+' '+maxD;
+
+      // Reset filters and rebuild
+      document.getElementById('fClient').value='';
+      buildClientSelect();
+      clearFilters();
+
+      alert('✅ Cargado: '+file.name+'\n'+newRAW.length+' registros, '+CLIENTS.length+' clientes');
+
+    }catch(err){
+      alert('Error al leer el archivo:\n'+err.message);
+      console.error(err);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+</script>
+</body>
+</html>
